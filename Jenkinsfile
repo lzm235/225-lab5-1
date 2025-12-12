@@ -84,25 +84,18 @@ stage('Remove Test Data') {
     }
 }
 
-          stage('Deploy to Prod Environment') {
-            steps {
-                script {
-                    // Set up Kubernetes configuration using the specified KUBECONFIG
-                    //sh "ls -la"
-                    sh "sed -i 's|${DOCKER_IMAGE}:latest|${DOCKER_IMAGE}:${IMAGE_TAG}|' deployment-prod.yaml"
-                    sh "cd .."
-                    sh "kubectl apply -f deployment-prod.yaml"
-                }
-            }
-        }     
-        stage('Check Kubernetes Cluster') {
-            steps {
-                script {
-                    sh "kubectl get all"
-                }
-            }
-        }
+stage('Deploy to Prod Environment') {
+    steps {
+        echo 'Prod deployment skipped due to restricted permissions in shared Kubernetes cluster'
     }
+}
+   
+stage('Check Kubernetes Cluster') {
+    steps {
+        echo 'Cluster inspection skipped due to RBAC restrictions'
+    }
+}
+
 
     post {
 
