@@ -36,18 +36,12 @@ pipeline {
           }
         }
 
-        stage('Deploy to Dev Environment') {
-            steps {
-                script {
-                    // This sets up the Kubernetes configuration using the specified KUBECONFIG
-                    def kubeConfig = readFile(KUBECONFIG)
-                    sh "kubectl delete --all deployments --namespace=default"
-                    // This updates the deployment-dev.yaml to use the new image tag
-                    sh "sed -i 's|${DOCKER_IMAGE}:latest|${DOCKER_IMAGE}:${IMAGE_TAG}|' deployment-dev.yaml"
-                    sh "kubectl apply -f deployment-dev.yaml"
-                }
-            }
-        }
+stage('Deploy to Dev Environment') {
+    steps {
+        echo 'Deploy skipped due to Kubernetes RBAC restrictions in Rancher-managed cluster'
+    }
+}
+
         
         stage ("Run Security Checks") {
             steps {
