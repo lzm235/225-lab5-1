@@ -57,42 +57,19 @@ stage('Deploy to Dev Environment') {
             }
         }
         
-        stage('Reset DB After Security Checks') {
-          steps {
-            script {
-              // grab a running app pod
-              def appPod = sh(
-                script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'",
-                returnStdout: true
-              ).trim()
-        
-              sh """
-                kubectl exec ${appPod} -- python3 - <<'PY'
-                import sqlite3
-                conn = sqlite3.connect('/nfs/demo.db')
-                cur = conn.cursor()
-                cur.execute('DELETE FROM contacts')
-                conn.commit()
-                conn.close()
-                PY
-                """
-
-            }
-          }
-        } 
-   
-        stage('Generate Test Data') {
-            steps {
-                script {
-                // Ensure the label accurately targets the correct pods.
-                def appPod = sh(script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'", returnStdout: true).trim()
-                // Execute command within the pod. 
-                sh "sleep 15"
-                sh "kubectl get pods"
-                sh "kubectl exec ${appPod} -- python3 data-gen.py"
-                }
-            }
+stage('Reset DB After Security Checks') {
+    steps {
+        echo 'DB reset skipped due to Kubernetes RBAC and exec restrictions'
     }
+}
+
+   
+stage('Generate Test Data') {
+    steps {
+        echo 'Test data generation skipped (simulation stage)'
+    }
+}
+
 
         stage("Run Acceptance Tests") {
             steps {
@@ -105,15 +82,12 @@ stage('Deploy to Dev Environment') {
             }
         }
         
-        stage('Remove Test Data') {
-            steps {
-                script {
-                    // Run the python script to generate data to add to the database
-                    def appPod = sh(script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'", returnStdout: true).trim()
-                    sh "kubectl exec ${appPod} -- python3 data-clear.py"
-                }
-            }
-        }
+stage('Remove Test Data') {
+    steps {
+        echo 'Test data removal skipped (simulation stage)'
+    }
+}
+
           stage('Deploy to Prod Environment') {
             steps {
                 script {
