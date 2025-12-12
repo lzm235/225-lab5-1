@@ -2,50 +2,56 @@ pipeline {
     agent any 
 
     environment {
-        DOCKER_CREDENTIALS_ID = 'roseaw-dockerhub'  
-        DOCKER_IMAGE = 'cithit/liz227'                                   //<-----change this to your MiamiID!
+        DOCKER_CREDENTIALS_ID = 'roseaw-dockerhub'
+        DOCKER_IMAGE = 'cithit/liz227'
         IMAGE_TAG = "build-${BUILD_NUMBER}"
-        GITHUB_URL = 'https://github.com/lzm235/225-lab5-1.git'     //<-----change this to match this new repository!
-        KUBECONFIG = credentials('liz227-225')                           //<-----change this to match your kubernetes credentials (MiamiID-225)! 
+        GITHUB_URL = 'https://github.com/lzm235/225-lab5-1.git'
+        KUBECONFIG = credentials('liz227-225')
     }
 
     stages {
+
         stage('Code Checkout') {
             steps {
                 cleanWs()
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']],
+                checkout([$class: 'GitSCM',
+                          branches: [[name: '*/main']],
                           userRemoteConfigs: [[url: "${GITHUB_URL}"]]])
             }
         }
-        
-       stage('Lint HTML') {
+
+        stage('Lint HTML') {
             steps {
                 sh 'npm install htmlhint --save-dev'
                 sh 'npx htmlhint *.html'
             }
         }
-        
+
         stage('Build & Push Docker Image') {
-          steps {
-            script {
-              docker.withRegistry('https://registry.hub.docker.com', "${DOCKER_CREDENTIALS_ID}") {
-                def app = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}", "-f Dockerfile.build .")
-                app.push()
-              }
+            steps {
+                script {
+                    docker.withRegistry(
+                        'https://registry.hub.docker.com',
+                        "${DOCKER_CREDENTIALS_ID}"
+                    ) {
+                        def app = docker.build(
+                            "${DOCKER_IMAGE}:${IMAGE_TAG}",
+                            "-f Dockerfile.build ."
+                        )
+                        app.push()
+                    }
+                }
             }
-          }
         }
 
-stage('Deploy to Dev Environment') {
-    steps {
-        echo 'Deploy skipped due to Kubernetes RBAC restrictions in Rancher-managed cluster'
-    }
-}
-
-        
-        stage ("Run Security Checks") {
+        stage('Deploy to Dev Environment') {
             steps {
-                //                                                                 ###change the IP address in this section to your cluster IP address!!!!####
+                echo 'Deploy skipped due to Kubernetes RBAC restrictions in Rancher-managed cluster'
+            }
+        }
+
+        stage('Run Security Checks') {
+            steps {
                 sh 'docker pull public.ecr.aws/portswigger/dastardly:latest'
                 sh '''
                     docker run --user $(id -u) -v ${WORKSPACE}:${WORKSPACE}:rw \
@@ -56,57 +62,56 @@ stage('Deploy to Dev Environment') {
                 '''
             }
         }
-        
-stage('Reset DB After Security Checks') {
-    steps {
-        echo 'DB reset skipped due to Kubernetes RBAC and exec restrictions'
-    }
-}
 
-   
-stage('Generate Test Data') {
-    steps {
-        echo 'Test data generation skipped (simulation stage)'
-    }
-}
+        stage('Reset DB After Security Checks') {
+            steps {
+                echo 'DB reset skipped due to Kubernetes RBAC and exec restrictions'
+            }
+        }
 
+        stage('Generate Test Data') {
+            steps {
+                echo 'Test data generation skipped (simulation stage)'
+            }
+        }
 
-stage("Run Acceptance Tests") {
-    steps {
-        echo 'Acceptance tests skipped (environment not externally reachable in Jenkins)'
-    }
-}
+        stage('Run Acceptance Tests') {
+            steps {
+                echo 'Acceptance tests skipped (environment not externally reachable in Jenkins)'
+            }
+        }
 
-        
-stage('Remove Test Data') {
-    steps {
-        echo 'Test data removal skipped (simulation stage)'
-    }
-}
+        stage('Remove Test Data') {
+            steps {
+                echo 'Test data removal skipped (simulation stage)'
+            }
+        }
 
-stage('Deploy to Prod Environment') {
-    steps {
-        echo 'Prod deployment skipped due to restricted permissions in shared Kubernetes cluster'
-    }
-}
-   
-stage('Check Kubernetes Cluster') {
-    steps {
-        echo 'Cluster inspection skipped due to RBAC restrictions'
-    }
-}
+        stage('Deploy to Prod Environment') {
+            steps {
+                echo 'Prod deployment skipped due to restricted permissions in shared Kubernetes cluster'
+            }
+        }
 
+        stage('Check Kubernetes Cluster') {
+            steps {
+                echo 'Cluster inspection skipped due to RBAC restrictions'
+            }
+        }
+    }
 
     post {
-
         success {
-            slackSend color: "good", message: "Build Completed: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+            slackSend color: "good",
+                      message: "Build Completed: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
         }
         unstable {
-            slackSend color: "warning", message: "Build Completed: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+            slackSend color: "warning",
+                      message: "Build Completed: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
         }
         failure {
-            slackSend color: "danger", message: "Build Completed: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+            slackSend color: "danger",
+                      message: "Build Completed: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
         }
     }
 }
